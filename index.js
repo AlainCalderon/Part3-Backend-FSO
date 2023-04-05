@@ -9,8 +9,8 @@ morgan.token('postData',(req,res) => {
 app.use(express.json());
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :postData '))
 app.use(cors())
-
-const PORT = 3001;
+app.use(express.static('build'))
+const PORT = process.env.PORT || 3001;
 let persons = [
     { 
       id: 1,
