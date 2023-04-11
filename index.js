@@ -63,7 +63,8 @@ const generateId = () => {
 
 app.post("/api/persons", (req, res) => {
   const body = req.body;
-  Person.create({ name: body.name, number: body.number });
+
+  Person.create({ name: body.name, number: parseInt(body.number) });
 });
 
 app.get("/api/persons/:id", (req, res) => {
