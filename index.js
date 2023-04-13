@@ -8,8 +8,9 @@ const morgan = require("morgan");
 const cors = require("cors");
 
 //Start of code
-app.use(express.static("build"));
+app.use(cors());
 app.use(express.json());
+app.use(express.static("build"));
 morgan.token("postData", (req, res) => {
   return JSON.stringify(req.body);
 });
@@ -19,29 +20,11 @@ app.use(
     ":method :url :status :res[content-length] - :response-time ms :postData "
   )
 );
-app.use(cors());
+
 
 const PORT = process.env.PORT || 3001;
 
-//Error handlers
-const idError = (err, req, res, next) => {
-  console.log(err.message);
-  if (err.name === "CastError") {
-    return res.status(400).send({ error: "Problem with ID" });
-  } else if (err.name === "ValidationError") {
-    return res.status(400).send({ error: err.message });
-  }
-  next(err);
-};
 
-app.use(idError);
-
-const errorHandler = (err, req, res, next) => {
-  console.log(err.message);
-  res.status(500).end();
-};
-
-app.use(errorHandler);
 
 //Routes
 app.get("/api/persons", (req, res) => {
@@ -60,16 +43,18 @@ app.get("/info", (req, res) => {
   });
 });
 
-app.post("/api/persons", (req, res) => {
+app.post("/api/persons", (req, res,next) => {
   const body = req.body;
-  Person.create({ name: body.name, number: parseInt(body.number) })
+  Person.create({ name: body.name, number: body.number })
     .then((result) => {
-      console.log(result);
+      res.json(result);
     })
-    .catch((err) => next(err));
+    .catch((err) =>{ 
+      console.log(err)
+      next(err)});
 });
 
-app.get("/api/persons/:id", (req, res) => {
+app.get("/api/persons/:id", (req, res,next) => {
   const id = req.params.id;
   Person.findById(id)
     .then((personId) => {
@@ -78,7 +63,7 @@ app.get("/api/persons/:id", (req, res) => {
     .catch((err) => next(err));
 });
 
-app.delete("/api/persons/:id", (req, res) => {
+app.delete("/api/persons/:id", (req, res,next) => {
   const id = req.params.id;
   Person.findByIdAndRemove(id)
     .then((result) => {
@@ -86,11 +71,12 @@ app.delete("/api/persons/:id", (req, res) => {
       res.status(204).end();
     })
     .catch((err) => {
+   
       next(err);
     });
 });
 
-app.put("/api/persons/:id", (req, res) => {
+app.put("/api/persons/:id", (req, res,next) => {
   const id = req.params.id;
   console.log(req.body);
   let newNumber = {
@@ -109,6 +95,27 @@ app.put("/api/persons/:id", (req, res) => {
       next(err);
     });
 });
+
+//Error handlers
+const idError = (err, req, res, next) => {
+  console.log(`${err}, ID ERROR HANDLER`);
+  if (err.name === "CastError") {
+    return res.status(400).send({ error: "Problem with ID" });
+  } else if (err.name === 'ValidationError') {
+    return res.status(400).send({ error: err.message });
+  }
+  next(err);
+};
+
+app.use(idError);
+
+const errorHandler = (err, req, res, next) => {
+  console.log(`ERROR HANDLER ${err}`);
+  res.status(500).send({error:err.message});
+};
+
+app.use(errorHandler);
+
 
 app.listen(PORT, () => {
   console.log(`Server is running in port ${PORT}`);
